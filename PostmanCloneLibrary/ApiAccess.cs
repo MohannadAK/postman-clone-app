@@ -1,17 +1,50 @@
-﻿using System.Text.Json;
+﻿using System.Text;
+using System.Text.Json;
 
 namespace PostmanCloneLibrary;
 
 public class ApiAccess : IApiAccess
 {
     private readonly HttpClient _client = new();
+
     public async Task<string> CallApiAsync(
         string url,
-        bool formatOutput = true,
-        HttpAction action = HttpAction.GET
+        string content,
+        HttpAction action = HttpAction.GET,
+        bool formatOutput = true
     )
     {
-        var response = await _client.GetAsync(url);
+        return await CallApiAsync(url, new StringContent(content, Encoding.UTF8, "application/json"), action, formatOutput);
+    }
+    public async Task<string> CallApiAsync(
+        string url,
+        HttpContent? content = null,
+        HttpAction action = HttpAction.GET,
+        bool formatOutput = true
+    )
+    {
+        HttpResponseMessage? response;
+
+        switch (action)
+        {
+            case HttpAction.GET:
+                response = await _client.GetAsync(url);
+                break;
+            case HttpAction.POST:
+                response = await _client.PostAsync(url, content);
+                break;
+            case HttpAction.PUT:
+                response = await _client.PutAsync(url, content);
+                break;
+            case HttpAction.PATCH:
+                response = await _client.PatchAsync(url, content);
+                break;
+            case HttpAction.DELETE:
+                response = await _client.DeleteAsync(url);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(action), action, null);
+        }
 
         if (response.IsSuccessStatusCode)
         {
